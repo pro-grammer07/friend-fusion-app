@@ -167,6 +167,21 @@ export const markAllNotificationsRead = async (token) => {
     }
 };
 
+export const searchUsers = async (token, search) => {
+    try {
+        const res = await apiRequest({
+            url: "/users/search",
+            token: token,
+            method: "POST",
+            data: { search },
+        });
+
+        return res?.data;
+    } catch (error) {
+        console.log(error)
+    }
+};
+
 export const viewUserProfile = async (token, id) => {
         try {
         const res = await apiRequest({

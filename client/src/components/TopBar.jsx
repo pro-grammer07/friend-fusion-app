@@ -12,11 +12,13 @@ import { IoMdNotificationsOutline } from "react-icons/io";
 import { NoProfile } from "../assets";
 import { SetTheme } from "../redux/theme";
 import { Logout } from "../redux/userSlice";
+import { SetSearch, ClearSearch } from "../redux/searchSlice";
 import {
   fetchPosts,
   getNotifications,
   markNotificationRead,
   markAllNotificationsRead,
+  searchUsers,
 } from "../utils";
 
 const NOTIFICATION_MESSAGES = {
@@ -24,6 +26,8 @@ const NOTIFICATION_MESSAGES = {
   comment_post: "commented on your post",
   like_comment: "liked your comment",
   reply_comment: "replied to your comment",
+  friend_request: "sent you a friend request",
+  friend_request_accepted: "accepted your friend request",
 };
 
 const TopBar = () => {
@@ -61,6 +65,16 @@ const TopBar = () => {
   };
 
   const handleSearch = async (data) => {
+    const term = data?.search?.trim();
+
+    if (!term) {
+      dispatch(ClearSearch());
+      await fetchPosts(user.token, dispatch);
+      return;
+    }
+
+    const people = await searchUsers(user.token, term);
+    dispatch(SetSearch({ term, people: people || [] }));
     await fetchPosts(user.token, dispatch, "", data);
   };
 

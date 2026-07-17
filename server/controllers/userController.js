@@ -5,6 +5,7 @@ import { compareString, createJWT, hashString } from "../utils/index.js";
 import PasswordReset from "../models/PasswordReset.js";
 import { resetPasswordLink } from "../index.js";
 import FriendRequest from "../models/friendRequest.js";
+import Notifications from "../models/notificationModel.js";
 
 export const verifyEmail = async (req, res) => {
   const { userId, token } = req.params;
@@ -292,6 +293,12 @@ export const friendRequest = async (req, res, next) => {
       requestFrom: userId,
     });
 
+    await Notifications.create({
+      userId: requestTo,
+      from: userId,
+      type: "friend_request",
+    });
+
     res.status(201).json({
       success: true,
       message: "Friend Request sent successfully",
@@ -391,6 +398,12 @@ export const acceptRequest = async (req, res, next) => {
 
       friend.friends.push(newRes.requestTo);
       await friend.save();
+
+      await Notifications.create({
+        userId: newRes.requestFrom,
+        from: id,
+        type: "friend_request_accepted",
+      });
     }
 
     res.status(201).json({
@@ -447,6 +460,35 @@ export const suggestedFriends = async (req, res) => {
     res.status(200).json({
       success: true,
       data: suggestedFriends,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(404).json({ message: error.message });
+  }
+};
+
+export const searchUsers = async (req, res) => {
+  try {
+    const { userId } = req.body.user;
+    const { search } = req.body;
+
+    if (!search) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+
+    const users = await Users.find({
+      _id: { $ne: userId },
+      $or: [
+        { firstName: { $regex: search, $options: "i" } },
+        { lastName: { $regex: search, $options: "i" } },
+      ],
+    })
+      .limit(20)
+      .select("firstName lastName profileUrl profession -password");
+
+    res.status(200).json({
+      success: true,
+      data: users,
     });
   } catch (error) {
     console.log(error);

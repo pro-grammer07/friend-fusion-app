@@ -9,6 +9,7 @@ import {
   profileViews,
   requestPasswordReset,
   resetPassword,
+  searchUsers,
   suggestedFriends,
   updateUser,
   verifyEmail,
@@ -40,6 +41,9 @@ router.post("/profile-view", userAuth, profileViews);
 
 //suggested friends
 router.post("/suggested-friends", userAuth, suggestedFriends);
+
+// search users
+router.post("/search", userAuth, searchUsers);
 
 router.get("/verified", (req, res) => {
   res.sendFile(path.join(__dirname, "./views/build", "verified.html"));

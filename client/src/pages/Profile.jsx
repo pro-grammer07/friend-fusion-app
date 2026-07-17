@@ -16,14 +16,14 @@ const Profile = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const { posts } = useSelector((state) => state.posts);
-  const [userInfo, setUserInfo] = useState(user);
+  const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const uri = "/posts/get-user-post/" + id;
 
       const getUser = async () => {
       const res = await getUserInfo(user?.token, id);
-      setUserInfo(res ?? user);
+      setUserInfo(res ?? (id ? null : user));
     };
 
     const getPosts = async () => {
@@ -44,9 +44,11 @@ const Profile = () => {
 
 useEffect(() => {
   setLoading(true);
+  setUserInfo(null);
   getUser();
   getPosts();
-}, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [id]);
 
   return (
     <>

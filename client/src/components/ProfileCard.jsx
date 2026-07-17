@@ -20,6 +20,7 @@ const ProfileCard = ({ user }) => {
     // eslint-disable-next-line
   const { user: data, edit } = useSelector((state) => state.user);
   const dispatch = useDispatch();
+  const isOwnProfile = user?._id === data?._id;
 
   return (
     <div>
@@ -37,7 +38,7 @@ const ProfileCard = ({ user }) => {
                 {user?.firstName} {user?.lastName}
               </p>
               <span className='text-ascent-2'>
-                {user?.profession ?? "No Profession"}
+                {user?.profession ?? (isOwnProfile ? "Add Profession" : "")}
               </span>
             </div>
           </Link>
@@ -63,12 +64,12 @@ const ProfileCard = ({ user }) => {
         <div className='w-full flex flex-col gap-2 py-4 border-b border-[#66666645]'>
           <div className='flex gap-2 items-center text-ascent-2'>
             <CiLocationOn className='text-xl text-ascent-1' />
-            <span>{user?.location ?? "Add Location"}</span>
+            <span>{user?.location ?? (isOwnProfile ? "Add Location" : "")}</span>
           </div>
 
           <div className='flex gap-2 items-center text-ascent-2'>
             <BsBriefcase className=' text-lg text-ascent-1' />
-            <span>{user?.profession ?? "Add Profession"}</span>
+            <span>{user?.profession ?? (isOwnProfile ? "Add Profession" : "")}</span>
           </div>
         </div>
 
@@ -94,54 +95,66 @@ const ProfileCard = ({ user }) => {
           </div>
         </div>
 
-        <div className='w-full flex flex-col gap-4 py-4 pb-6'>
+        <div
+          className={`w-full flex-col gap-4 py-4 pb-6 ${
+            isOwnProfile || user?.instagram || user?.twitter || user?.facebook
+              ? "flex"
+              : "hidden"
+          }`}
+        >
           <p className='text-ascent-1 text-lg font-semibold'>Social Profile</p>
 
-          <div className='flex gap-2 items-center text-ascent-2'>
-            <BsInstagram className=' text-xl text-ascent-1' />
-            {user?.instagram ? (
-              <a
-                href={user.instagram}
-                target='_blank'
-                rel='noreferrer'
-                className='hover:text-blue'
-              >
-                Instagram
-              </a>
-            ) : (
-              <span>Add Instagram</span>
-            )}
-          </div>
-          <div className='flex gap-2 items-center text-ascent-2'>
-            <FaTwitterSquare className=' text-xl text-ascent-1' />
-            {user?.twitter ? (
-              <a
-                href={user.twitter}
-                target='_blank'
-                rel='noreferrer'
-                className='hover:text-blue'
-              >
-                Twitter
-              </a>
-            ) : (
-              <span>Add Twitter</span>
-            )}
-          </div>
-          <div className='flex gap-2 items-center text-ascent-2'>
-            <BsFacebook className=' text-xl text-ascent-1' />
-            {user?.facebook ? (
-              <a
-                href={user.facebook}
-                target='_blank'
-                rel='noreferrer'
-                className='hover:text-blue'
-              >
-                Facebook
-              </a>
-            ) : (
-              <span>Add Facebook</span>
-            )}
-          </div>
+          {(user?.instagram || isOwnProfile) && (
+            <div className='flex gap-2 items-center text-ascent-2'>
+              <BsInstagram className=' text-xl text-ascent-1' />
+              {user?.instagram ? (
+                <a
+                  href={user.instagram}
+                  target='_blank'
+                  rel='noreferrer'
+                  className='hover:text-blue'
+                >
+                  Instagram
+                </a>
+              ) : (
+                <span>Add Instagram</span>
+              )}
+            </div>
+          )}
+          {(user?.twitter || isOwnProfile) && (
+            <div className='flex gap-2 items-center text-ascent-2'>
+              <FaTwitterSquare className=' text-xl text-ascent-1' />
+              {user?.twitter ? (
+                <a
+                  href={user.twitter}
+                  target='_blank'
+                  rel='noreferrer'
+                  className='hover:text-blue'
+                >
+                  Twitter
+                </a>
+              ) : (
+                <span>Add Twitter</span>
+              )}
+            </div>
+          )}
+          {(user?.facebook || isOwnProfile) && (
+            <div className='flex gap-2 items-center text-ascent-2'>
+              <BsFacebook className=' text-xl text-ascent-1' />
+              {user?.facebook ? (
+                <a
+                  href={user.facebook}
+                  target='_blank'
+                  rel='noreferrer'
+                  className='hover:text-blue'
+                >
+                  Facebook
+                </a>
+              ) : (
+                <span>Add Facebook</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

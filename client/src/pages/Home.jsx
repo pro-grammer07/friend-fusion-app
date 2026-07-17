@@ -19,10 +19,12 @@ import { MdClose } from "react-icons/md";
 import { useForm } from "react-hook-form";
 import { apiRequest, handleFileUpload, fetchPosts, likePost, deletePost, sendFriendRequest, getUserInfo } from "../utils";
 import { UpdateProfile, UserLogin } from "../redux/userSlice";
+import { ClearSearch } from "../redux/searchSlice";
 
 const Home = () => {
   const { user, edit } = useSelector((state) => state.user);
   const { posts } = useSelector(state => state.posts);
+  const { term: searchTerm, people: searchPeople } = useSelector((state) => state.search);
   const [friendRequest, setFriendRequest] = useState([]);
   const [suggestedFriends, setSuggestedFriends] = useState([]);
   const [errMsg, setErrMsg] = useState("");
@@ -137,6 +139,11 @@ const Home = () => {
       await fetchPost();
     };
 
+    const handleClearSearch = async () => {
+      dispatch(ClearSearch());
+      await fetchPost();
+    };
+
     const fetchFriendRequests = async () => {
       try {
             const res = await apiRequest({
@@ -223,6 +230,55 @@ const Home = () => {
 
           {/* CENTER */}
           <div className='flex-1 h-full px-4 flex flex-col gap-6 overflow-y-auto rounded-lg'>
+            {searchTerm && (
+              <div className='flex items-center justify-between'>
+                <p className='text-ascent-1 text-lg font-semibold'>
+                  Results for &quot;{searchTerm}&quot;
+                </p>
+                <button
+                  type='button'
+                  className='text-sm text-blue'
+                  onClick={handleClearSearch}
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+
+            {searchTerm && (
+              <div className='flex flex-col gap-3'>
+                <p className='text-ascent-2 font-medium'>People</p>
+                {searchPeople?.length > 0 ? (
+                  searchPeople.map((person) => (
+                    <Link
+                      to={"/profile/" + person?._id}
+                      key={person?._id}
+                      className='w-full flex gap-4 items-center bg-primary p-3 rounded-lg'
+                    >
+                      <img
+                        src={person?.profileUrl ?? NoProfile}
+                        alt={person?.firstName}
+                        className='w-12 h-12 object-cover rounded-full'
+                      />
+                      <div className='flex-1'>
+                        <p className='text-base font-medium text-ascent-1'>
+                          {person?.firstName} {person?.lastName}
+                        </p>
+                        <span className='text-sm text-ascent-2'>
+                          {person?.profession ?? ""}
+                        </span>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <p className='text-sm text-ascent-2'>No people found</p>
+                )}
+
+                <p className='text-ascent-2 font-medium mt-2'>Posts</p>
+              </div>
+            )}
+
+            {!searchTerm && (
             <form
               onSubmit={handleSubmit(handlePostSubmit)}
               className='bg-primary px-4 rounded-lg'
@@ -363,6 +419,7 @@ const Home = () => {
                 </div>
               </div>
             </form>
+            )}
 
             {loading ? (
               <Loading />
