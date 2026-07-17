@@ -1,21 +1,22 @@
 import Comments from "../models/commentModel.js";
 import Posts from "../models/postModel.js";
 import Users from "../models/userModel.js";
+import Notifications from "../models/notificationModel.js";
 
 export const createPost = async (req, res, next) => {
   try {
     const { userId } = req.body.user;
-    const { description, image } = req.body;
+    const { description, media } = req.body;
 
-    if (!description) {
-      next("You must provide a description");
+    if (!description && !(media && media.length)) {
+      next("You must provide a description or attach at least one photo/video");
       return;
     }
 
     const post = await Posts.create({
       userId,
       description,
-      image,
+      media: media || [],
     });
 
     res.status(200).json({
@@ -176,6 +177,15 @@ export const likePost = async (req, res, next) => {
 
     if (index === -1) {
       post.likes.push(userId);
+
+      if (String(post.userId) !== String(userId)) {
+        await Notifications.create({
+          userId: post.userId,
+          from: userId,
+          type: "like_post",
+          postId: post._id,
+        });
+      }
     } else {
       post.likes = post.likes.filter((pid) => pid !== String(userId));
     }
@@ -207,6 +217,16 @@ export const likePostComment = async (req, res, next) => {
 
       if (index === -1) {
         comment.likes.push(userId);
+
+        if (String(comment.userId) !== String(userId)) {
+          await Notifications.create({
+            userId: comment.userId,
+            from: userId,
+            type: "like_comment",
+            postId: comment.postId,
+            commentId: comment._id,
+          });
+        }
       } else {
         comment.likes = comment.likes.filter((i) => i !== String(userId));
       }
@@ -220,6 +240,7 @@ export const likePostComment = async (req, res, next) => {
       const replyComments = await Comments.findOne(
         { _id: id },
         {
+          postId: 1,
           replies: {
             $elemMatch: {
               _id: rid,
@@ -234,6 +255,17 @@ export const likePostComment = async (req, res, next) => {
 
       if (index === -1) {
         replyComments.replies[0].likes.push(userId);
+
+        const replyOwner = replyComments.replies[0].userId;
+        if (String(replyOwner) !== String(userId)) {
+          await Notifications.create({
+            userId: replyOwner,
+            from: userId,
+            type: "like_comment",
+            postId: replyComments.postId,
+            commentId: replyComments._id,
+          });
+        }
       } else {
         replyComments.replies[0].likes = replyComments.replies[0]?.likes.filter(
           (i) => i !== String(userId)
@@ -281,6 +313,16 @@ export const commentPost = async (req, res, next) => {
       new: true,
     });
 
+    if (String(post.userId) !== String(userId)) {
+      await Notifications.create({
+        userId: post.userId,
+        from: userId,
+        type: "comment_post",
+        postId: post._id,
+        commentId: newComment._id,
+      });
+    }
+
     res.status(201).json(newComment);
   } catch (error) {
     console.log(error);
@@ -308,7 +350,17 @@ export const replyPostComment = async (req, res, next) => {
       created_At: Date.now(),
     });
 
-    commentInfo.save();
+    await commentInfo.save();
+
+    if (String(commentInfo.userId) !== String(userId)) {
+      await Notifications.create({
+        userId: commentInfo.userId,
+        from: userId,
+        type: "reply_comment",
+        postId: commentInfo.postId,
+        commentId: commentInfo._id,
+      });
+    }
 
     res.status(200).json(commentInfo);
   } catch (error) {
@@ -322,6 +374,7 @@ export const deletePost = async (req, res, next) => {
     const { id } = req.params;
 
     await Posts.findByIdAndDelete(id);
+    await Notifications.deleteMany({ postId: id });
 
     res.status(200).json({
       success: true,

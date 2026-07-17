@@ -35,13 +35,14 @@ export const handleFileUpload = async (uploadFile) => {
 
     try {
         const response = await axios.post(
-            `https://api.cloudinary.com/v1_1${process.env.REACT_APP_CLOUDINARY_ID}/image/upload/`, 
+            `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_ID}/auto/upload/`,
             formData
         );
-        return response.data.secure_url;
+        return { url: response.data.secure_url, resourceType: response.data.resource_type };
     } catch (error) {
         console.log(error);
-    }  
+        return undefined;
+    }
 };
 
 export const fetchPosts = async(token, dispatch, uri, data) => {
@@ -87,14 +88,14 @@ export const deletePost = async (id, token) => {
     }
 };
 
-export const getUserInfo = async (id, token) => {
+export const getUserInfo = async (token, id) => {
     try {
-        const uri = id === undefined ? "/users/get-user" : "/users/get-user" + id;
+        const uri = id === undefined ? "/users/get-user" : "/users/get-user/" + id;
 
-        const res = await apiRequest({      
-            url: uri, 
-            token: token, 
-            method: "POST", 
+        const res = await apiRequest({
+            url: uri,
+            token: token,
+            method: "POST",
         });
 
         if (res?.message === "Authentication failed") {
@@ -103,7 +104,7 @@ export const getUserInfo = async (id, token) => {
             window.location.replace("/login")
         }
 
-        return res?.user;
+        return res?.data;
     } catch (error) {
         console.log(error)
     }
@@ -119,6 +120,48 @@ export const sendFriendRequest = async (token, id) => {
         });
 
         return;
+    } catch (error) {
+        console.log(error)
+    }
+};
+
+export const getNotifications = async (token) => {
+    try {
+        const res = await apiRequest({
+            url: "/notifications",
+            token: token,
+            method: "POST",
+        });
+
+        return res?.data;
+    } catch (error) {
+        console.log(error)
+    }
+};
+
+export const markNotificationRead = async (token, id) => {
+    try {
+        const res = await apiRequest({
+            url: "/notifications/" + id + "/read",
+            token: token,
+            method: "POST",
+        });
+
+        return res?.data;
+    } catch (error) {
+        console.log(error)
+    }
+};
+
+export const markAllNotificationsRead = async (token) => {
+    try {
+        const res = await apiRequest({
+            url: "/notifications/read-all",
+            token: token,
+            method: "POST",
+        });
+
+        return res?.data;
     } catch (error) {
         console.log(error)
     }

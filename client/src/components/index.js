@@ -6,6 +6,8 @@ import ProfileCard from "./ProfileCard";
 import FriendsCard from "./FriendsCard";
 import PostCard from "./PostCard";
 import EditProfile from "./EditProfile";
+import Toast from "./Toast";
+import ConfirmDialog from "./ConfirmDialog";
 
 export {
   Loading,
@@ -16,4 +18,6 @@ export {
   FriendsCard,
   PostCard,
   EditProfile,
+  Toast,
+  ConfirmDialog,
 };

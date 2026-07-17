@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 import { NoProfile } from "../assets";
 import { BsFiletypeGif, BsPersonFillAdd } from "react-icons/bs";
 import { BiImages, BiSolidVideo } from "react-icons/bi";
+import { MdClose } from "react-icons/md";
 import { useForm } from "react-hook-form";
 import { apiRequest, handleFileUpload, fetchPosts, likePost, deletePost, sendFriendRequest, getUserInfo } from "../utils";
 import { UpdateProfile, UserLogin } from "../redux/userSlice";
@@ -25,7 +26,7 @@ const Home = () => {
   const [friendRequest, setFriendRequest] = useState([]);
   const [suggestedFriends, setSuggestedFriends] = useState([]);
   const [errMsg, setErrMsg] = useState("");
-  const [file, setFile] = useState(null);
+  const [attachments, setAttachments] = useState([]);
   const [posting, setPosting] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -34,23 +35,65 @@ const Home = () => {
   const {
     register,
     handleSubmit,
-    reset, 
+    reset,
+    watch,
     formState: { errors },
   } = useForm();
 
-  const handlePostSubmit = async (data) => { 
+  const description = watch("description");
+  const canPost = !!description?.trim() || attachments.length > 0;
+
+  const addAttachments = (fileList, kind) => {
+    const newItems = Array.from(fileList).map((file) => ({
+      id: `${Date.now()}-${Math.random()}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+      kind,
+    }));
+    setAttachments((prev) => [...prev, ...newItems]);
+  };
+
+  const removeAttachment = (id) => {
+    setAttachments((prev) => {
+      const target = prev.find((a) => a.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((a) => a.id !== id);
+    });
+  };
+
+  const clearAttachments = () => {
+    attachments.forEach((a) => URL.revokeObjectURL(a.previewUrl));
+    setAttachments([]);
+  };
+
+  const handlePostSubmit = async (data) => {
+    if (!canPost) {
+      setErrMsg({
+        status: "failed",
+        message: "Write something or attach a photo/video to post",
+      });
+      return;
+    }
+
     setPosting(true);
     setErrMsg("");
 
     try {
-      const uri = file && (await handleFileUpload(file));
+      const uploads = await Promise.all(
+        attachments.map(async (a) => {
+          const uploaded = await handleFileUpload(a.file);
+          return uploaded && { url: uploaded.url, type: a.kind };
+        })
+      );
 
-      const newData = uri ? { ...data, image: uri } : data;
+      const media = uploads.filter(Boolean);
+
+      const newData = media.length > 0 ? { ...data, media } : data;
       const res = await apiRequest({
-            url: "/posts/create-post", 
-            data: newData,  
-            token: user?.token, 
-            method: "POST", 
+            url: "/posts/create-post",
+            data: newData,
+            token: user?.token,
+            method: "POST",
       });
 
         console.log(res);
@@ -58,16 +101,16 @@ const Home = () => {
           setErrMsg(res);
         } else {
           reset({
-            description: "", 
+            description: "",
           });
-          setFile(null);
+          clearAttachments();
           setErrMsg("");
           await fetchPost();
 
         }
         setPosting(false);
-      
-    
+
+
     } catch (error) {
       console.log(error);
     setPosting(false);
@@ -149,8 +192,10 @@ const Home = () => {
 
     const getUser = async () => {
       const res = await getUserInfo(user?.token);
-      const newData = { token: user?.token, ...res };
-      dispatch(UserLogin(newData));
+      if (res) {
+        const newData = { ...user, ...res, token: user?.token };
+        dispatch(UserLogin(newData));
+      }
     };
 
     useEffect(() => {
@@ -192,9 +237,7 @@ const Home = () => {
                   styles='w-full rounded-full py-5'
                   placeholder="What's on your mind...."
                   name='description'
-                  register={register("description", {
-                    required: "Write something about post",
-                  })}
+                  register={register("description")}
                   error={errors.description ? errors.description.message : ""}
                 />
               </div>
@@ -211,6 +254,36 @@ const Home = () => {
                 </span>
               )}
 
+              {attachments.length > 0 && (
+                <div className='w-full grid grid-cols-3 sm:grid-cols-4 gap-2 pt-4'>
+                  {attachments.map((a) => (
+                    <div key={a.id} className='relative aspect-square'>
+                      {a.kind === "video" ? (
+                        <video
+                          src={a.previewUrl}
+                          muted
+                          className='w-full h-full object-cover rounded-lg'
+                        />
+                      ) : (
+                        <img
+                          src={a.previewUrl}
+                          alt='attachment preview'
+                          className='w-full h-full object-cover rounded-lg'
+                        />
+                      )}
+                      <button
+                        type='button'
+                        onClick={() => removeAttachment(a.id)}
+                        className='absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 leading-none'
+                        aria-label='Remove attachment'
+                      >
+                        <MdClose size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className='flex items-center justify-between py-4'>
                 <label
                   htmlFor='imgUpload'
@@ -218,7 +291,11 @@ const Home = () => {
                 >
                   <input
                     type='file'
-                    onChange={(e) => setFile(e.target.files[0])}
+                    multiple
+                    onChange={(e) => {
+                      addAttachments(e.target.files, "image");
+                      e.target.value = "";
+                    }}
                     className='hidden'
                     id='imgUpload'
                     data-max-size='5120'
@@ -234,8 +311,12 @@ const Home = () => {
                 >
                   <input
                     type='file'
+                    multiple
                     data-max-size='5120'
-                    onChange={(e) => setFile(e.target.files[0])}
+                    onChange={(e) => {
+                      addAttachments(e.target.files, "video");
+                      e.target.value = "";
+                    }}
                     className='hidden'
                     id='videoUpload'
                     accept='.mp4, .wav'
@@ -250,8 +331,12 @@ const Home = () => {
                 >
                   <input
                     type='file'
+                    multiple
                     data-max-size='5120'
-                    onChange={(e) => setFile(e.target.files[0])}
+                    onChange={(e) => {
+                      addAttachments(e.target.files, "gif");
+                      e.target.value = "";
+                    }}
                     className='hidden'
                     id='vgifUpload'
                     accept='.gif'
@@ -267,7 +352,12 @@ const Home = () => {
                     <CustomButton
                       type='submit'
                       title='Post'
-                      containerStyles='bg-[#0444a4] text-white py-1 px-6 rounded-full font-semibold text-sm'
+                      disabled={!canPost}
+                      containerStyles={`py-1 px-6 rounded-full font-semibold text-sm ${
+                        canPost
+                          ? "bg-[#0444a4] text-white"
+                          : "bg-[#66666645] text-ascent-2"
+                      }`}
                     />
                   )}
                 </div>
@@ -299,7 +389,7 @@ const Home = () => {
             <div className='w-full bg-primary shadow-sm rounded-lg px-6 py-5'>
               <div className='flex items-center justify-between text-xl text-ascent-1 pb-2 border-b border-[#66666645]'>
                 <span> Friend Request</span>
-                <span>{friendRequest?.length}</span>
+                <span>{friendRequest?.length ?? 0}</span>
               </div>
 
               <div className='w-full flex flex-col gap-4 pt-4'>
@@ -343,8 +433,9 @@ const Home = () => {
 
             {/* SUGGESTED FRIENDS */}
             <div className='w-full bg-primary shadow-sm rounded-lg px-5 py-5'>
-              <div className='flex items-center justify-between text-lg text-ascent-1 border-b border-[#66666645]'>
+              <div className='flex items-center justify-between text-lg text-ascent-1 pb-2 border-b border-[#66666645]'>
                 <span>Friend Suggestion</span>
+                <span>{suggestedFriends?.length ?? 0}</span>
               </div>
               <div className='w-full flex flex-col gap-4 pt-4'>
                 {suggestedFriends?.map((friend) => (

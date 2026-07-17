@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import TextInput from "./TextInput";
 import Loading from "./Loading";
 import CustomButton from "./CustomButton";
+import Toast from "./Toast";
 import { apiRequest, handleFileUpload } from "../utils";
 import { UserLogin, UpdateProfile } from "../redux/userSlice";
 
@@ -18,6 +19,7 @@ const EditProfile = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // eslint-disable-next-line no-unused-vars
   const [picture, setPicture] = useState(null);
+  const [showToast, setShowToast] = useState(false);
   // const [setIsSubmitting] = useState(false);
 
 
@@ -35,20 +37,34 @@ const EditProfile = () => {
     setErrMsg("");
 
     try {
-      const uri = picture && (await handleFileUpload(picture));
+      let uri;
+      if (picture) {
+        uri = await handleFileUpload(picture);
+        if (!uri) {
+          setErrMsg({
+            status: "failed",
+            message: "Failed to upload profile picture. Please try again.",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
 
-      const { firstName, lastName, location, profession } = data;
+      const { firstName, lastName, location, profession, instagram, twitter, facebook } = data;
             const res = await apiRequest({
-            url: "/users/update-user", 
+            url: "/users/update-user",
             data: {
-              firstName, 
-              lastName, 
-              location, 
-              profession, 
+              firstName,
+              lastName,
+              location,
+              profession,
+              instagram,
+              twitter,
+              facebook,
               profileUrl: uri ? uri : user?.profileUrl,
-            },  
-            method: "PUT", 
-            token: user?.token, 
+            },
+            method: "PUT",
+            token: user?.token,
             });
 
     console.log(res);
@@ -58,6 +74,10 @@ const EditProfile = () => {
           setErrMsg(res);
           const newUser = { token: res?.token, ...res?.user };
           dispatch(UserLogin(newUser));
+
+          if (uri) {
+            setShowToast(true);
+          }
 
           setTimeout(() => {
             dispatch(UpdateProfile(false));
@@ -156,6 +176,36 @@ const EditProfile = () => {
                 error={errors.location ? errors.location?.message : ""}
               />
 
+              <TextInput
+                name='instagram'
+                label='Instagram'
+                placeholder='https://instagram.com/username'
+                type='text'
+                styles='w-full'
+                register={register("instagram")}
+                error={errors.instagram ? errors.instagram?.message : ""}
+              />
+
+              <TextInput
+                name='twitter'
+                label='Twitter'
+                placeholder='https://twitter.com/username'
+                type='text'
+                styles='w-full'
+                register={register("twitter")}
+                error={errors.twitter ? errors.twitter?.message : ""}
+              />
+
+              <TextInput
+                name='facebook'
+                label='Facebook'
+                placeholder='https://facebook.com/username'
+                type='text'
+                styles='w-full'
+                register={register("facebook")}
+                error={errors.facebook ? errors.facebook?.message : ""}
+              />
+
               <label
                 className='flex items-center gap-1 text-base text-ascent-2 hover:text-ascent-1 cursor-pointer my-4'
                 htmlFor='imgUpload'
@@ -197,6 +247,12 @@ const EditProfile = () => {
           </div>
         </div>
       </div>
+
+      <Toast
+        message='Profile picture has been updated'
+        show={showToast}
+        onClose={() => setShowToast(false)}
+      />
     </>
   );
 };

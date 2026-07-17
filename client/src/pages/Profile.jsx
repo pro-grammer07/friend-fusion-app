@@ -22,8 +22,8 @@ const Profile = () => {
   const uri = "/posts/get-user-post/" + id;
 
       const getUser = async () => {
-      const res = await getUserInfo(user?.token);
-      setUserInfo(res);
+      const res = await getUserInfo(user?.token, id);
+      setUserInfo(res ?? user);
     };
 
     const getPosts = async () => {

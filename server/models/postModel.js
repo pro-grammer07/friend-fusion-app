@@ -12,8 +12,13 @@ import mongoose, { Schema } from "mongoose";
 const postSchema = new mongoose.Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "Users" },
-    description: { type: String, required: true },
-    image: { type: String },
+    description: { type: String },
+    media: [
+      {
+        url: { type: String, required: true },
+        type: { type: String, enum: ["image", "video", "gif"], required: true },
+      },
+    ],
     likes: [{ type: String }],
     comments: [{ type: Schema.Types.ObjectId, ref: "Comments" }],
   },

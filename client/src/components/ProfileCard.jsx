@@ -74,7 +74,7 @@ const ProfileCard = ({ user }) => {
 
         <div className='w-full flex flex-col gap-2 py-4 border-b border-[#66666645]'>
           <p className='text-xl text-ascent-1 font-semibold'>
-            {user?.friends?.length} Friends
+            {user?.friends?.length ?? 0} Friends
           </p>
 
           <div className='flex items-center justify-between'>
@@ -99,15 +99,48 @@ const ProfileCard = ({ user }) => {
 
           <div className='flex gap-2 items-center text-ascent-2'>
             <BsInstagram className=' text-xl text-ascent-1' />
-            <span>Instagram</span>
+            {user?.instagram ? (
+              <a
+                href={user.instagram}
+                target='_blank'
+                rel='noreferrer'
+                className='hover:text-blue'
+              >
+                Instagram
+              </a>
+            ) : (
+              <span>Add Instagram</span>
+            )}
           </div>
           <div className='flex gap-2 items-center text-ascent-2'>
             <FaTwitterSquare className=' text-xl text-ascent-1' />
-            <span>Twitter</span>
+            {user?.twitter ? (
+              <a
+                href={user.twitter}
+                target='_blank'
+                rel='noreferrer'
+                className='hover:text-blue'
+              >
+                Twitter
+              </a>
+            ) : (
+              <span>Add Twitter</span>
+            )}
           </div>
           <div className='flex gap-2 items-center text-ascent-2'>
             <BsFacebook className=' text-xl text-ascent-1' />
-            <span>Facebook</span>
+            {user?.facebook ? (
+              <a
+                href={user.facebook}
+                target='_blank'
+                rel='noreferrer'
+                className='hover:text-blue'
+              >
+                Facebook
+              </a>
+            ) : (
+              <span>Add Facebook</span>
+            )}
           </div>
         </div>
       </div>

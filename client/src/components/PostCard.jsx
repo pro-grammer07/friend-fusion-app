@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import TextInput from "./TextInput";
 import Loading from "./Loading";
 import CustomButton from "./CustomButton";
+import ConfirmDialog from "./ConfirmDialog";
 import { apiRequest } from "../utils";
 
 const getPostComments = async (id) => {
@@ -163,6 +164,7 @@ const PostCard = ({ post, user, deletePost, likePost }) => {
   const [loading, setLoading] = useState(false);
   const [replyComments, setReplyComments] = useState(null);
   const [showComments, setShowComments] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const getComments = async (id) => {
     setLoading(true);
@@ -227,12 +229,30 @@ const handleLike = async (uri) => {
             </span>
           )}
         </p>
-        {post?.image && (
-          <img
-            src={post?.image}
-            alt='postImage'
-            className='w-full mt-2 rounded-lg'
-          />
+        {post?.media?.length > 0 && (
+          <div
+            className={`w-full mt-2 grid gap-1 ${
+              post.media.length > 1 ? "grid-cols-2" : "grid-cols-1"
+            }`}
+          >
+            {post.media.map((item, index) =>
+              item.type === "video" ? (
+                <video
+                  key={index}
+                  src={item.url}
+                  controls
+                  className='w-full max-h-[500px] rounded-lg object-cover'
+                />
+              ) : (
+                <img
+                  key={index}
+                  src={item.url}
+                  alt='postMedia'
+                  className='w-full max-h-[500px] rounded-lg object-cover'
+                />
+              )
+            )}
+          </div>
         )}
       </div>
 
@@ -260,7 +280,7 @@ const handleLike = async (uri) => {
         {user?._id === post?.userId?._id && (
           <div
             className='flex gap-1 items-center text-base text-ascent-1 cursor-pointer'
-            onClick={() => deletePost(post?._id)}
+            onClick={() => setShowDeleteConfirm(true)}
           >
             <MdOutlineDeleteOutline size={20} />
             <span>Delete</span>
@@ -360,6 +380,18 @@ const handleLike = async (uri) => {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        show={showDeleteConfirm}
+        title='Delete post'
+        message='Are you sure you want to delete this post? This cannot be undone.'
+        confirmLabel='Delete'
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          deletePost(post?._id);
+        }}
+      />
     </div>
   );
 };

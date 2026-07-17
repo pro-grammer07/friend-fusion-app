@@ -181,12 +181,18 @@ export const getUser = async (req, res, next) => {
     }
 
     const { userId } = req.body.user;
+    const id = req.params.id || userId;
 
-    const user = await Users.findById(userId);
+    const user = await Users.findById(id).populate({
+      path: "friends",
+      select: "firstName lastName location profileUrl profession -password",
+    });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    user.password = undefined;
 
     res.status(200).json({
       success: true,
@@ -200,7 +206,16 @@ export const getUser = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
   try {
-    const { firstName, lastName, location, profileUrl, profession } = req.body;
+    const {
+      firstName,
+      lastName,
+      location,
+      profileUrl,
+      profession,
+      instagram,
+      twitter,
+      facebook,
+    } = req.body;
 
     // if (!(firstName || lastName || profession || location)) {
     //   next("Please provide all required fields");
@@ -215,6 +230,9 @@ export const updateUser = async (req, res, next) => {
       location,
       profileUrl,
       profession,
+      instagram,
+      twitter,
+      facebook,
       _id: userId,
     };
     const user = await Users.findByIdAndUpdate(userId, updateUser, {
